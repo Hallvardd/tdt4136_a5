@@ -173,7 +173,7 @@ class CSP:
         between i and j, the value should be deleted from i's list of
         legal values in 'assignment'.
         """
-        # is equality the only constraint to consider?
+        # Is equality the only constraint to consider?
         revised = False
         for x in assignment[i]:
             satisfied = False
