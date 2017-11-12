@@ -109,6 +109,12 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
+        # TODO different definition of assignment
+        if assignment:
+            return assignment
+
+        var = self.select_unassigned_variable(assignment)
+        #for value in self.
         # TODO: IMPLEMENT THIS
         pass
 
@@ -118,8 +124,9 @@ class CSP:
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        for var in assignment:
+            if len(var) > 1:
+                return var
 
     def inference(self, assignment, queue):
         """The function 'AC-3' from the pseudocode in the textbook.
@@ -127,8 +134,19 @@ class CSP:
         the lists of legal values for each undecided variable. 'queue'
         is the initial queue of arcs that should be visited.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        while len(queue) > 0:
+            arc = queue.pop()
+            i, j = arc[0], arc[1]
+
+            if self.revise(assignment, i, j):
+                if len(assignment[arc[0]]) == 0:
+                    return False
+                # for loop which should add all neighbours, in the case of a field (x,y) in sudoku this would be
+                # (x, [0,8]), ([0,8], y) and all fields of the block which (x,y) resides, excluding (x, y) itself
+                for neighbour in self.get_all_neighboring_arcs(i):
+                    queue.append(neighbour)
+
+        return True
 
     def revise(self, assignment, i, j):
         """The function 'Revise' from the pseudocode in the textbook.
@@ -139,8 +157,22 @@ class CSP:
         between i and j, the value should be deleted from i's list of
         legal values in 'assignment'.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        # is equality the only constraint to consider?
+
+        di_copy = copy.deepcopy(assignment[i])
+        revised = False
+        for x in di_copy:
+            satisfied = False
+            pos = 0
+            #while( pos< len(dj) and not satisfied):
+            for y in assignment[j]:
+                if x != y:
+                    satisfied = True
+                    break
+            if not satisfied:
+                revised = True
+                assignment[i].remove(x)
+        return revised
 
 def create_map_coloring_csp():
     """Instantiate a CSP representing the map coloring problem from the
@@ -200,3 +232,5 @@ def print_sudoku_solution(solution):
         print
         if row == 2 or row == 5:
             print '------+-------+------'
+
+print_sudoku_solution(create_sudoku_csp("veryhard.txt").backtracking_search())
