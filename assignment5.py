@@ -5,6 +5,8 @@ import itertools
 
 class CSP:
     def __init__(self):
+        self.backtrack_called = 0
+        self.failures = 0
         # self.variables is a list of the variable names in the CSP
         self.variables = []
 
@@ -109,14 +111,26 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
-        # TODO different definition of assignment
-        if assignment:
+
+        self.backtrack_called += 1
+
+        # returns either the key of an entry with length > 1 in assignment, or 'done' if unsuccessful
+        var = self.select_unassigned_variable(assignment)
+        if var is 'done':
             return assignment
 
-        var = self.select_unassigned_variable(assignment)
-        #for value in self.
-        # TODO: IMPLEMENT THIS
-        pass
+        for value in assignment[var]:
+            assignment_copy = copy.deepcopy(assignment)
+            assignment_copy[var] = value
+            if self.inference(assignment_copy,self.get_all_arcs()):
+                backtracking_result = self.backtrack(assignment_copy)
+                if backtracking_result is not None:
+                    return backtracking_result
+
+        # if failed returns none
+        self.failures += 1
+        return None
+
 
     def select_unassigned_variable(self, assignment):
         """The function 'Select-Unassigned-Variable' from the pseudocode
@@ -124,9 +138,12 @@ class CSP:
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
         """
+
+        # Returns the first var which meets the requirements.
         for var in assignment:
-            if len(var) > 1:
+            if len(assignment[var]) > 1:
                 return var
+        return 'done'
 
     def inference(self, assignment, queue):
         """The function 'AC-3' from the pseudocode in the textbook.
@@ -135,18 +152,17 @@ class CSP:
         is the initial queue of arcs that should be visited.
         """
         while len(queue) > 0:
-            arc = queue.pop()
-            i, j = arc[0], arc[1]
-
+            i, j = queue.pop(0)
             if self.revise(assignment, i, j):
-                if len(assignment[arc[0]]) == 0:
+                if not (assignment[i]):
                     return False
                 # for loop which should add all neighbours, in the case of a field (x,y) in sudoku this would be
-                # (x, [0,8]), ([0,8], y) and all fields of the block which (x,y) resides, excluding (x, y) itself
+                # (x, [0,8]), ([0,8], y) and all fields of the block which (x,y) resides, excluding (x, y) and (y, x)
                 for neighbour in self.get_all_neighboring_arcs(i):
-                    queue.append(neighbour)
-
+                    if neighbour != (i,j) and neighbour != (j,i):
+                        queue.append(neighbour)
         return True
+
 
     def revise(self, assignment, i, j):
         """The function 'Revise' from the pseudocode in the textbook.
@@ -158,15 +174,13 @@ class CSP:
         legal values in 'assignment'.
         """
         # is equality the only constraint to consider?
-
-        di_copy = copy.deepcopy(assignment[i])
         revised = False
-        for x in di_copy:
+        for x in assignment[i]:
             satisfied = False
-            pos = 0
-            #while( pos< len(dj) and not satisfied):
-            for y in assignment[j]:
-                if x != y:
+            pairs = [(x, y) for y in assignment[j]]
+            for p in pairs:
+                # if the constraints are satisfied in some way the loop i broken, and x is not removed as a legal value.
+                if p in self.constraints[i][j]:
                     satisfied = True
                     break
             if not satisfied:
@@ -233,4 +247,19 @@ def print_sudoku_solution(solution):
         if row == 2 or row == 5:
             print '------+-------+------'
 
-print_sudoku_solution(create_sudoku_csp("veryhard.txt").backtracking_search())
+if __name__ == '__main__':
+    csp_easy = create_sudoku_csp("sudokus/easy.txt")
+    csp_medium = create_sudoku_csp("sudokus/medium.txt")
+    csp_hard = create_sudoku_csp("sudokus/hard.txt")
+    csp_veryhard = create_sudoku_csp("sudokus/veryhard.txt")
+    print_sudoku_solution(csp_easy.backtracking_search())
+    print('backtrack called: %d , failures %d' %(csp_easy.backtrack_called, csp_easy.failures))
+    print('')
+    print_sudoku_solution(csp_medium.backtracking_search())
+    print('backtrack called: %d , failures %d' %(csp_medium.backtrack_called, csp_medium.failures))
+    print('')
+    print_sudoku_solution(csp_hard.backtracking_search())
+    print('backtrack called: %d , failures %d' %(csp_hard.backtrack_called, csp_hard.failures))
+    print('')
+    print_sudoku_solution(csp_veryhard.backtracking_search())
+    print('backtrack called: %d , failures %d' %(csp_veryhard.backtrack_called, csp_veryhard.failures))
